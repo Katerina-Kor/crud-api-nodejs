@@ -6,6 +6,7 @@ import { processGetMethod } from './methods/get';
 import { getBody } from './middlewares/getBody.ts';
 import { StatusCodes, RequestMethods } from './utils/responseData';
 import { processPostMethod } from './methods/post.ts';
+import { processPutMethod } from './methods/put.ts';
 
 const PORT = process.env.PORT || '4001';
 
@@ -23,7 +24,7 @@ const server = http.createServer((request, response) => {
       break;
 
     case RequestMethods.PUT:
-      // getBody(request, response, processPutMethod);
+      processPutMethod(request, response);
       break;
 
     case RequestMethods.DELETE:

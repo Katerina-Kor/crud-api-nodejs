@@ -15,6 +15,7 @@ export const processGetMethod = (request: IncomingMessage, response: ServerRespo
 
   } else if (url.startsWith(Endpoints.CERTAIN_USER)) {
     const userId = getUserId(url);
+    console.log('PING')
     console.log('id', userId);
 
     if (isInvalidId(userId)) {

@@ -5,7 +5,7 @@ import { getBody } from "../middlewares/getBody";
 
 export const processPostMethod = async (request: IncomingMessage, response: ServerResponse) => {
   const url = getUrl(request.url);
-  console.log('get url', url);
+  console.log('post url', url);
   
   if (url === Endpoints.USERS) {
     const body = await getBody(request);
@@ -17,7 +17,7 @@ export const processPostMethod = async (request: IncomingMessage, response: Serv
     };
 
     const createdUser = createUser(body);
-    sendResponse(response, StatusCodes.OK, JSON.stringify(createdUser));
+    sendResponse(response, StatusCodes.CREATED, JSON.stringify(createdUser));
 
     return;
 
