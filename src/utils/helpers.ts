@@ -2,8 +2,8 @@ import { URL } from "url";
 import { IncomingMessage, ServerResponse } from "http";
 import { StatusCodes } from "./responseData";
 import { users } from "../data/users";
-import { IUser } from "../types";
-import { validate as uuidValidate } from 'uuid';
+import { IUser, IUserFromRequest } from "../types";
+import { validate as uuidValidate, v4 as uuidv4 } from 'uuid';
 
 export const getRequestQuery = (requestUrl: string = '', requestHost: string = '') => {
   const query = new URL(requestUrl, `http://${requestHost}`);
@@ -34,6 +34,24 @@ export const getUserById = (id: string) => {
 
 export const isInvalidId = (id: string) => {
   return !uuidValidate(id);
+};
+
+export const isInvalidBody = (body: Object) => {
+  if ('username' in body && 'age' in body && 'hobbies' in body) return false;
+  return true;
+};
+
+export const createUser = (body: IUserFromRequest) => {
+  const newUser: IUser = {
+    id: uuidv4(),
+    username: body.username,
+    age: body.age,
+    hobbies: body.hobbies
+  };
+
+  users.push(newUser);
+
+  return newUser;
 }
 
 export const sendResponse = (response: ServerResponse, statusCode: StatusCodes, body?: string) => {

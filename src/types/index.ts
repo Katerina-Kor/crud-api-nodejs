@@ -8,3 +8,5 @@ export interface IUser {
   age: number;
   hobbies: string[];
 }
+
+export interface IUserFromRequest extends Omit<IUser, 'id'> {};
