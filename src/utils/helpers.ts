@@ -1,24 +1,14 @@
 import { URL } from "url";
 import { IncomingMessage, ServerResponse } from "http";
-import { StatusCodes } from "./responseData";
+import { StatusCodes } from "../types";
 import { users } from "../data/users";
-import { IUser, IUserFromRequest } from "../types";
-import { validate as uuidValidate, v4 as uuidv4 } from 'uuid';
+import { IUser } from "../types";
+import { validate as uuidValidate } from 'uuid';
 
-export const getRequestQuery = (requestUrl: string = '', requestHost: string = '') => {
-  const query = new URL(requestUrl, `http://${requestHost}`);
-  return query;
-};
+export const getPathName = (requestUrl: string = '', requestHost: string = '') => {
+  const pathName = new URL(requestUrl, `http://${requestHost}`).pathname;
 
-export const getUrl = (requestUrl: string | undefined) => {
-  let url = '';
-
-  if (requestUrl) {
-    const urlWithoutSearch = requestUrl.split('?')[0];
-    url = urlWithoutSearch.endsWith('/') ? urlWithoutSearch.slice(1, -1) : urlWithoutSearch.slice(1);
-  };
-
-  return url;
+  return pathName.endsWith('/') ? pathName.slice(1, -1) : pathName.slice(1);
 };
 
 export const getUserId = (url: string) => {
@@ -41,39 +31,33 @@ export const isInvalidBody = (body: Object) => {
   return true;
 };
 
-export const createUser = (body: IUserFromRequest) => {
-  const newUser: IUser = {
-    id: uuidv4(),
-    username: body.username,
-    age: body.age,
-    hobbies: body.hobbies
+export const getBody = (request: IncomingMessage): Promise<any> => {
+  return new Promise((resolve) => {
+    let bodyBuffer: Buffer[] = [];
+
+    request.on('data', (dataChunk: Buffer) => {
+      bodyBuffer.push(dataChunk);
+    });
+
+    request.on('end', () => {
+      const body = Buffer.concat(bodyBuffer).toString('utf8');
+
+      resolve(JSON.parse(body));
+    });
+
+    request.on('error', () => resolve({}));
+  })
+};
+
+export const sendResponse = (response: ServerResponse, statusCode: StatusCodes, body: string | IUser | IUser[] = '') => {
+  let contentType: string = typeof body === 'string' ? 'text/plain' :  'application/json';
+  let sendBody: string = typeof body === 'string' ? body : JSON.stringify(body);
+  
+  const headers = {
+    'Content-Type': contentType,
+    'Content-Length': Buffer.byteLength(sendBody),
   };
 
-  users.push(newUser);
-
-  return newUser;
-};
-
-export const updateUser = (id: string, body: IUserFromRequest) => {
-  const userForUpdate = users.find((user) => user.id === id) as IUser;
-  userForUpdate.username = body.username;
-  userForUpdate.age = body.age;
-  userForUpdate.hobbies = body.hobbies;
-
-  return userForUpdate;
-};
-
-export const deleteUser = (id: string) => {
-  const userForDeleteIndex = users.findIndex((user) => user.id === id);
-  users.splice(userForDeleteIndex, 1);
-}
-
-export const sendResponse = (response: ServerResponse, statusCode: StatusCodes, body?: string) => {
-  const headers = body ? {
-    'Content-Type': 'application/json',
-    'Content-Length': Buffer.byteLength(body),
-  } : undefined
-
   response.writeHead(statusCode, headers);
-  response.end(body);
-}
+  response.end(sendBody);
+};
