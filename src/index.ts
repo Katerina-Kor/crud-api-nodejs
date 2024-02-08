@@ -7,6 +7,7 @@ import { getBody } from './middlewares/getBody.ts';
 import { StatusCodes, RequestMethods } from './utils/responseData';
 import { processPostMethod } from './methods/post.ts';
 import { processPutMethod } from './methods/put.ts';
+import { processDeleteMethod } from './methods/delete.ts';
 
 const PORT = process.env.PORT || '4001';
 
@@ -28,7 +29,7 @@ const server = http.createServer((request, response) => {
       break;
 
     case RequestMethods.DELETE:
-      // getBody(request, response, processDeleteMethod);
+      processDeleteMethod(request, response);
       break;
 
     default:

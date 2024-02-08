@@ -61,6 +61,11 @@ export const updateUser = (id: string, body: IUserFromRequest) => {
   userForUpdate.hobbies = body.hobbies;
 
   return userForUpdate;
+};
+
+export const deleteUser = (id: string) => {
+  const userForDeleteIndex = users.findIndex((user) => user.id === id);
+  users.splice(userForDeleteIndex, 1);
 }
 
 export const sendResponse = (response: ServerResponse, statusCode: StatusCodes, body?: string) => {
