@@ -1,6 +1,6 @@
 import { ServerResponse, IncomingMessage } from "http";
 import { getPathName, getUserById, getUserId, isInvalidBody, isInvalidId, sendResponse, getBody } from "../utils/helpers";
-import { Endpoints, ResponseMessages, StatusCodes } from "../types";
+import { Endpoints, IResponse, ResponseMessages, StatusCodes } from "../types";
 import { updateUser } from "./usersController";
 
 export const processPutMethod = async (request: IncomingMessage, response: ServerResponse) => {
@@ -10,7 +10,14 @@ export const processPutMethod = async (request: IncomingMessage, response: Serve
     const userId = getUserId(pathName);
 
     if (isInvalidId(userId)) {
-      sendResponse(response, StatusCodes.BAD_REQUEST, ResponseMessages.INVALID_ID);
+      const bodyS: IResponse = {
+        data: null,
+        error: {
+          code: StatusCodes.BAD_REQUEST,
+          message: ResponseMessages.INVALID_ID
+        }
+      }
+      sendResponse(response, StatusCodes.BAD_REQUEST, bodyS);
 
       return;
     };
@@ -21,20 +28,45 @@ export const processPutMethod = async (request: IncomingMessage, response: Serve
       const body = await getBody(request);
 
       if (isInvalidBody(body)) {
-        sendResponse(response, StatusCodes.BAD_REQUEST, ResponseMessages.MISSED_FIELDS);
+        const bodyS: IResponse = {
+          data: null,
+          error: {
+            code: StatusCodes.BAD_REQUEST,
+            message: ResponseMessages.MISSED_FIELDS
+          }
+        }
+        sendResponse(response, StatusCodes.BAD_REQUEST, bodyS);
 
         return;
       };
 
       const updatedUser = updateUser(userId, body);
-      sendResponse(response, StatusCodes.OK, updatedUser);
+      const bodyS: IResponse = {
+        data: updatedUser,
+        error: null
+      }
+      sendResponse(response, StatusCodes.OK, bodyS);
 
     } else {
-      sendResponse(response, StatusCodes.NOT_FOUND, ResponseMessages.NOT_FOUND);
+      const bodyS: IResponse = {
+        data: null,
+        error: {
+          code: StatusCodes.NOT_FOUND,
+          message: ResponseMessages.NOT_FOUND
+        }
+      }
+      sendResponse(response, StatusCodes.NOT_FOUND, bodyS);
     };
 
     return;
   };
 
-  sendResponse(response, StatusCodes.NOT_FOUND, `${ResponseMessages.WRONG_ENDPOINT}: ${pathName}`);
+  const bodyS: IResponse = {
+    data: null,
+    error: {
+      code: StatusCodes.NOT_FOUND,
+      message: `${ResponseMessages.WRONG_ENDPOINT}: ${pathName}`
+    }
+  }
+  sendResponse(response, StatusCodes.NOT_FOUND, bodyS);
 };

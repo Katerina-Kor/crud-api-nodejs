@@ -1,6 +1,6 @@
 import { ServerResponse, IncomingMessage } from "http";
 import { getPathName, getUserById, getUserId, isInvalidId, sendResponse } from "../utils/helpers";
-import { Endpoints, ResponseMessages, StatusCodes } from "../types";
+import { Endpoints, IResponse, ResponseMessages, StatusCodes } from "../types";
 import { deleteUser } from "./usersController";
 
 export const processDeleteMethod = async (request: IncomingMessage, response: ServerResponse) => {
@@ -10,7 +10,14 @@ export const processDeleteMethod = async (request: IncomingMessage, response: Se
     const userId = getUserId(pathName);
 
     if (isInvalidId(userId)) {
-      sendResponse(response, StatusCodes.BAD_REQUEST, ResponseMessages.INVALID_ID);
+      const bodyS: IResponse = {
+        data: null,
+        error: {
+          code: StatusCodes.BAD_REQUEST,
+          message: ResponseMessages.INVALID_ID
+        }
+      }
+      sendResponse(response, StatusCodes.BAD_REQUEST, bodyS);
 
       return;
     };
@@ -19,14 +26,32 @@ export const processDeleteMethod = async (request: IncomingMessage, response: Se
 
     if (user) {
       deleteUser(userId);
-      sendResponse(response, StatusCodes.NO_CONTENT);
+      const bodyS: IResponse = {
+        data: null,
+        error: null
+      }
+      sendResponse(response, StatusCodes.NO_CONTENT, bodyS);
 
     } else {
-      sendResponse(response, StatusCodes.NOT_FOUND, ResponseMessages.NOT_FOUND);
+      const bodyS: IResponse = {
+        data: null,
+        error: {
+          code: StatusCodes.NOT_FOUND,
+          message: ResponseMessages.NOT_FOUND
+        }
+      }
+      sendResponse(response, StatusCodes.NOT_FOUND,bodyS);
     };
 
     return;
   };
   
-  sendResponse(response, StatusCodes.NOT_FOUND, `${ResponseMessages.WRONG_ENDPOINT}: ${pathName}`);
+  const bodyS: IResponse = {
+    data: null,
+    error: {
+      code: StatusCodes.NOT_FOUND,
+      message: `${ResponseMessages.WRONG_ENDPOINT}: ${pathName}`
+    }
+  }
+  sendResponse(response, StatusCodes.NOT_FOUND, bodyS);
 };

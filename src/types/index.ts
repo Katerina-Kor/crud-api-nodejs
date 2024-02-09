@@ -35,4 +35,14 @@ export enum ResponseMessages {
   'NOT_FOUND' = 'Not found',
   'INVALID_ID' = 'Invalid user id',
   'MISSED_FIELDS' = 'Missed required fields',
+};
+
+interface IResponseError {
+  code: number;
+  message: string;
+}
+
+export interface IResponse {
+  data: IUser | IUser[] | string | null;
+  error: IResponseError | null;
 }

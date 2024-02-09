@@ -1,5 +1,5 @@
 import { processGetMethod } from './getController.ts';
-import { StatusCodes, RequestMethods, ResponseMessages } from '../types';
+import { StatusCodes, RequestMethods, ResponseMessages, IResponse } from '../types';
 import { processPostMethod } from './postController.ts';
 import { processPutMethod } from './putController.ts';
 import { processDeleteMethod } from './deleteController.ts';
@@ -28,10 +28,25 @@ export const serverHandler = async (request: IncomingMessage, response: ServerRe
         break;
   
       default:
-        sendResponse(response, StatusCodes.BAD_REQUEST, ResponseMessages.NO_RESPONSE);
+        const bodyS: IResponse = {
+          data: null,
+          error: {
+            code: StatusCodes.BAD_REQUEST,
+            message: ResponseMessages.NO_RESPONSE
+          }
+        }
+        sendResponse(response, StatusCodes.BAD_REQUEST, bodyS);
     }
 
   } catch (error) {
-    sendResponse(response, StatusCodes.INTERNAL_SERVER_ERROR, ResponseMessages.SERVER_ERROR);
+
+    const bodyS: IResponse = {
+      data: null,
+      error: {
+        code: StatusCodes.INTERNAL_SERVER_ERROR,
+        message: ResponseMessages.SERVER_ERROR
+      }
+    }
+    sendResponse(response, StatusCodes.INTERNAL_SERVER_ERROR, bodyS);
   }
 };

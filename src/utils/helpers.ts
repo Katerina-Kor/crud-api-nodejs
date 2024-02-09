@@ -1,6 +1,6 @@
 import { URL } from "url";
 import { IncomingMessage, ServerResponse } from "http";
-import { StatusCodes } from "../types";
+import { IResponse, StatusCodes } from "../types";
 import { users } from "../data/users";
 import { IUser } from "../types";
 import { validate as uuidValidate } from 'uuid';
@@ -49,15 +49,33 @@ export const getBody = (request: IncomingMessage): Promise<any> => {
   })
 };
 
-export const sendResponse = (response: ServerResponse, statusCode: StatusCodes, body: string | IUser | IUser[] = '') => {
-  let contentType: string = typeof body === 'string' ? 'text/plain' :  'application/json';
-  let sendBody: string = typeof body === 'string' ? body : JSON.stringify(body);
+export const getData = (response: ServerResponse): Promise<any> => {
+  return new Promise((resolve) => {
+    let bodyBuffer: Buffer[] = [];
+
+    response.on('data', (dataChunk: Buffer) => {
+      bodyBuffer.push(dataChunk);
+    });
+
+    response.on('end', () => {
+      const body = Buffer.concat(bodyBuffer).toString('utf8');
+
+      resolve(JSON.parse(body));
+    });
+
+    response.on('error', () => resolve({}));
+  })
+};
+
+export const sendResponse = (response: ServerResponse, statusCode: StatusCodes, body: IResponse) => {
+  // let contentType: string = typeof body === 'string' ? 'text/plain' :  'application/json';
+  // let sendBody: string = typeof body === 'string' ? body : JSON.stringify(body);
   
   const headers = {
-    'Content-Type': contentType,
-    'Content-Length': Buffer.byteLength(sendBody),
+    'Content-Type': 'application/json',
+    'Content-Length': Buffer.byteLength(JSON.stringify(body)),
   };
 
   response.writeHead(statusCode, headers);
-  response.end(sendBody);
+  response.end(JSON.stringify(body));
 };

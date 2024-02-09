@@ -1,6 +1,6 @@
 import { ServerResponse, IncomingMessage } from "http";
 import { getPathName, isInvalidBody, sendResponse, getBody } from "../utils/helpers";
-import { Endpoints, ResponseMessages, StatusCodes } from "../types";
+import { Endpoints, IResponse, ResponseMessages, StatusCodes } from "../types";
 import { createUser } from "./usersController";
 
 export const processPostMethod = async (request: IncomingMessage, response: ServerResponse) => {
@@ -10,16 +10,34 @@ export const processPostMethod = async (request: IncomingMessage, response: Serv
     const body = await getBody(request);
 
     if (isInvalidBody(body)) {
-      sendResponse(response, StatusCodes.BAD_REQUEST, ResponseMessages.MISSED_FIELDS);
+      const bodyS: IResponse = {
+        data: null,
+        error: {
+          code: StatusCodes.BAD_REQUEST,
+          message: ResponseMessages.MISSED_FIELDS
+        }
+      }
+      sendResponse(response, StatusCodes.BAD_REQUEST, bodyS);
 
       return;
     };
 
     const createdUser = createUser(body);
-    sendResponse(response, StatusCodes.CREATED, createdUser);
+    const bodyS: IResponse = {
+      data: createdUser,
+      error: null
+    }
+    sendResponse(response, StatusCodes.CREATED, bodyS);
 
     return;
   };
 
-  sendResponse(response, StatusCodes.NOT_FOUND, `${ResponseMessages.WRONG_ENDPOINT}: ${pathName}`);
+  const bodyS: IResponse = {
+    data: null,
+    error: {
+      code: StatusCodes.NOT_FOUND,
+      message: `${ResponseMessages.WRONG_ENDPOINT}: ${pathName}`
+    }
+  }
+  sendResponse(response, StatusCodes.NOT_FOUND, bodyS);
 };
