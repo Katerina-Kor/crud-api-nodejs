@@ -31,19 +31,32 @@ export const isInvalidBody = (body: Object) => {
   return true;
 };
 
-export const getBody = (request: IncomingMessage): Promise<any> => {
+export const getBody = (request: IncomingMessage, message?: string): Promise<any> => {
   return new Promise((resolve) => {
     let bodyBuffer: Buffer[] = [];
 
     request.on('data', (dataChunk: Buffer) => {
+      console.log('DATA EVENT')
       bodyBuffer.push(dataChunk);
+      console.log('chunk', dataChunk, dataChunk.toString());
     });
 
     request.on('end', () => {
-      const body = Buffer.concat(bodyBuffer).toString('utf8');
+      try {
+        const body = Buffer.concat(bodyBuffer).toString('utf8');
+        const bodyType = request.headers["content-type"]
+        // console.log(`getBody: ${message}`, body, typeof body, body.length, bodyType);
 
-      resolve(JSON.parse(body));
+        const resBody = bodyType === 'application/json'&& body.length > 0 ? JSON.parse(body) : body;
+        console.log('resBody', resBody)
+
+        resolve(resBody);
+      } catch (error) {
+        resolve({})
+      }
     });
+
+    request.on('close', () => console.log('CLOSE EVENT'))
 
     request.on('error', () => resolve({}));
   })
@@ -74,6 +87,7 @@ export const sendResponse = (response: ServerResponse, statusCode: StatusCodes, 
   const headers = {
     'Content-Type': 'application/json',
     'Content-Length': Buffer.byteLength(JSON.stringify(body)),
+    'Keep-Alive': 'timeout=1'
   };
 
   response.writeHead(statusCode, headers);

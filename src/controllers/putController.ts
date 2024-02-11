@@ -17,6 +17,7 @@ export const processPutMethod = async (request: IncomingMessage, response: Serve
           message: ResponseMessages.INVALID_ID
         }
       }
+      console.log('PUT 1')
       sendResponse(response, StatusCodes.BAD_REQUEST, bodyS);
 
       return;
@@ -35,6 +36,7 @@ export const processPutMethod = async (request: IncomingMessage, response: Serve
             message: ResponseMessages.MISSED_FIELDS
           }
         }
+        console.log('PUT 2')
         sendResponse(response, StatusCodes.BAD_REQUEST, bodyS);
 
         return;

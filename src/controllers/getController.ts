@@ -5,6 +5,7 @@ import { Endpoints, IResponse, ResponseMessages, StatusCodes } from "../types";
 
 export const processGetMethod = async (request: IncomingMessage, response: ServerResponse) => {
   const pathName = getPathName(request.url, request.headers.host);
+  console.log('GET', pathName);
 
   if (pathName === Endpoints.USERS) {
     const body: IResponse = {
@@ -27,6 +28,7 @@ export const processGetMethod = async (request: IncomingMessage, response: Serve
           message: ResponseMessages.INVALID_ID
         }
       }
+      console.log('GET 1')
       sendResponse(response, StatusCodes.BAD_REQUEST, body);
 
       return;

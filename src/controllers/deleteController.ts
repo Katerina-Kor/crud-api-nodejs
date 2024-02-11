@@ -17,6 +17,7 @@ export const processDeleteMethod = async (request: IncomingMessage, response: Se
           message: ResponseMessages.INVALID_ID
         }
       }
+      console.log('DELETE 1')
       sendResponse(response, StatusCodes.BAD_REQUEST, bodyS);
 
       return;

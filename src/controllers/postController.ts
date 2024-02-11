@@ -5,9 +5,11 @@ import { createUser } from "./usersController";
 
 export const processPostMethod = async (request: IncomingMessage, response: ServerResponse) => {
   const pathName = getPathName(request.url, request.headers.host);
+  console.log('POST PATHNAME', pathName)
   
   if (pathName === Endpoints.USERS) {
     const body = await getBody(request);
+    console.log('body in post', body)
 
     if (isInvalidBody(body)) {
       const bodyS: IResponse = {
@@ -17,6 +19,7 @@ export const processPostMethod = async (request: IncomingMessage, response: Serv
           message: ResponseMessages.MISSED_FIELDS
         }
       }
+      console.log('POST 1')
       sendResponse(response, StatusCodes.BAD_REQUEST, bodyS);
 
       return;

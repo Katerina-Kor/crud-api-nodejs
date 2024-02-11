@@ -8,6 +8,7 @@ import { IncomingMessage, ServerResponse } from 'http';
 
 export const serverHandler = async (request: IncomingMessage, response: ServerResponse) => {
   const method = request.method;
+  console.log('WORKER SERVER', method)
 
   try {
     switch (method) {
@@ -16,6 +17,7 @@ export const serverHandler = async (request: IncomingMessage, response: ServerRe
         break;
       
       case RequestMethods.POST:
+        console.log('POST CASE')
         await processPostMethod(request,response);
         break;
   
@@ -35,6 +37,7 @@ export const serverHandler = async (request: IncomingMessage, response: ServerRe
             message: ResponseMessages.NO_RESPONSE
           }
         }
+        console.log('DEFAULT 1')
         sendResponse(response, StatusCodes.BAD_REQUEST, bodyS);
     }
 
