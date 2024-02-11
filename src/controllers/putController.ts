@@ -1,9 +1,9 @@
 import { ServerResponse, IncomingMessage } from "http";
-import { getPathName, getUserById, getUserId, isInvalidBody, isInvalidId, sendResponse, getBody } from "../utils/helpers";
-import { Endpoints, IResponse, ResponseMessages, StatusCodes } from "../types";
-import { updateUser } from "./usersController";
+import { getPathName, getUserId, isInvalidBody, isInvalidId, sendResponse, getBody } from "../utils/helpers";
+import { Endpoints, IResponse, IUser, ResponseMessages, StatusCodes } from "../types";
+import { getUserById, updateUser } from "./usersController";
 
-export const processPutMethod = async (request: IncomingMessage, response: ServerResponse) => {
+export const processPutMethod = async (request: IncomingMessage, response: ServerResponse, bd: IUser[]) => {
   const pathName = getPathName(request.url, request.headers.host);
   
   if (pathName.startsWith(Endpoints.CERTAIN_USER)) {
@@ -17,13 +17,12 @@ export const processPutMethod = async (request: IncomingMessage, response: Serve
           message: ResponseMessages.INVALID_ID
         }
       }
-      console.log('PUT 1')
       sendResponse(response, StatusCodes.BAD_REQUEST, bodyS);
 
       return;
     };
 
-    const user = getUserById(userId);
+    const user = getUserById(userId, bd);
 
     if (user) {
       const body = await getBody(request);
@@ -36,18 +35,22 @@ export const processPutMethod = async (request: IncomingMessage, response: Serve
             message: ResponseMessages.MISSED_FIELDS
           }
         }
-        console.log('PUT 2')
         sendResponse(response, StatusCodes.BAD_REQUEST, bodyS);
 
         return;
       };
 
-      const updatedUser = updateUser(userId, body);
+      const updatedUser = updateUser(userId, body, bd);
       const bodyS: IResponse = {
         data: updatedUser,
         error: null
       }
       sendResponse(response, StatusCodes.OK, bodyS);
+
+      return {
+        type: 'update',
+        user: updatedUser
+      }
 
     } else {
       const bodyS: IResponse = {

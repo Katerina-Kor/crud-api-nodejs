@@ -1,18 +1,12 @@
 {
   "compilerOptions": {
-    "target": "ES6",
+    "target": "ES2015",
     "module": "CommonJS",
-
     "moduleResolution": "Node",
-    "resolveJsonModule": true,
-    "experimentalDecorators": true,
-    "allowImportingTsExtensions": true,
-    "noEmit": true,
-    "allowJs": true,
-    "outDir": "./dist",
     "rootDir": "./src",
+    "outDir": "./dist",
     "strict": true,
-    "esModuleInterop": true
+    "esModuleInterop": true,
   },
   "include": ["src/**/*.ts"],
   "exclude": ["node_modules"]

@@ -1,32 +1,34 @@
-import { processGetMethod } from './getController.ts';
-import { StatusCodes, RequestMethods, ResponseMessages, IResponse } from '../types';
-import { processPostMethod } from './postController.ts';
-import { processPutMethod } from './putController.ts';
-import { processDeleteMethod } from './deleteController.ts';
-import { sendResponse } from '../utils/helpers.ts';
+import { processGetMethod } from './getController';
+import { StatusCodes, RequestMethods, ResponseMessages, IResponse, IUser } from '../types';
+import { processPostMethod } from './postController';
+import { processPutMethod } from './putController';
+import { processDeleteMethod } from './deleteController';
+import { sendResponse } from '../utils/helpers';
 import { IncomingMessage, ServerResponse } from 'http';
+import { users } from '../data/users';
 
-export const serverHandler = async (request: IncomingMessage, response: ServerResponse) => {
+export const serverHandler = async (request: IncomingMessage, response: ServerResponse, bd?: IUser[]) => {
   const method = request.method;
-  console.log('WORKER SERVER', method)
+  const bdUsed = bd ? bd : users;
+
+  let actionNotification = null;
 
   try {
     switch (method) {
       case RequestMethods.GET:
-        await processGetMethod(request, response);
+        await processGetMethod(request, response, bdUsed);
         break;
       
       case RequestMethods.POST:
-        console.log('POST CASE')
-        await processPostMethod(request,response);
+        actionNotification = await processPostMethod(request,response, bdUsed);
         break;
   
       case RequestMethods.PUT:
-        await processPutMethod(request, response);
+        actionNotification = await processPutMethod(request, response, bdUsed);
         break;
   
       case RequestMethods.DELETE:
-        await processDeleteMethod(request, response);
+        actionNotification = await processDeleteMethod(request, response, bdUsed);
         break;
   
       default:
@@ -37,7 +39,6 @@ export const serverHandler = async (request: IncomingMessage, response: ServerRe
             message: ResponseMessages.NO_RESPONSE
           }
         }
-        console.log('DEFAULT 1')
         sendResponse(response, StatusCodes.BAD_REQUEST, bodyS);
     }
 
@@ -52,4 +53,6 @@ export const serverHandler = async (request: IncomingMessage, response: ServerRe
     }
     sendResponse(response, StatusCodes.INTERNAL_SERVER_ERROR, bodyS);
   }
+
+  return actionNotification;
 };

@@ -1,107 +1,104 @@
+import http from 'http';
 import cluster, { Worker } from 'cluster';
-import http, { IncomingMessage, ServerResponse } from 'http';
-import os, { hostname } from 'os';
+import { serverHandler } from './controllers/serverHandler';
+import { hostname, availableParallelism } from 'os';
+import { getBody, sendResponse } from './utils/helpers';
+import { IUser } from './types/index';
+import { users } from './data/users';
+import { addUser, deleteUser, updateUser } from './controllers/usersController';
 
-const port = 6000;
+const PORT = process.env.PORT || '4000';
 
 const server = http.createServer();
 
-console.log(`✅ ${cluster.isPrimary ? 'I am Primary' : `I am worker, my id is ${cluster.worker?.id}`}`);
+let number: number = 0;
+const ports: number[] = [];
 
-const workers: Worker[] = [];
+const workersArr: Worker[] = [];
 
-const requestPrimaryHandler = (request: IncomingMessage, response: ServerResponse) => {
-  console.log(`request to primary: ${request.method}`);
-
-  const options = {
-    hostname: hostname(),
-    port: 6001,
-    path: request.url,
-    method: request.method,
-    // headers: request.headers,
-  };
-
-  console.log(options)
-
-  http.request(options, (res) => {
-    res.on('data', () => {
-      console.log('res from worker')
-    });
-    res.on('end', () => {
-      response.writeHead(200);
-      response.end('response from master after response from worker')
-    })
-  }).end()
-  // workers[0].send({ event: "request" });
-
-  // workers[0].on('message', (message) => {
-  //   console.log(`message receive in primary: ${message}`);
-
-  // });
-
-};
-
-const requestWorkerHandler = (request: IncomingMessage, response: ServerResponse) => {
-  console.log(`request to worker: ${request.method}`);
-
-  response.writeHead(200);
-  response.end(`response from worker ${process.pid}`)
-
-};
-
-// Check is cluster primary or not
 if (cluster.isPrimary) {
-
-  server.listen(port, () => {
-    console.log(`Server running 🚀 at http://localhost:${port}/`);
+  for (let i = 1; i < availableParallelism(); i++) {
+    const workerPort = Number(PORT) + i;
+    const worker = cluster.fork({
+      workerPort: workerPort,
+      identificator: i,
+    });
+    workersArr.push(worker);
+    ports.push(workerPort);
+    worker.send(users);
+  };
+    
+  server.listen(PORT, () => {
+    console.log(`Load balancer running at http://localhost:${PORT}`);
   });
 
-  server.on('request', requestPrimaryHandler);
+  server.on('request', async (request, response) => {
+    const port = ports[number];
+    const options = {
+      hostname: hostname(),
+      port,
+      path: request.url,
+      method: request.method,
+      headers: request.headers,
+    };
+    number = number === 3 ? 0 : number + 1;
 
-  for (let i = 0; i < 2; i++) {
-    const worker: Worker = cluster.fork(); // Forks worker for each CPU core
-    workers.push(worker);
-  }
+    const req = http.request(options);
 
-  cluster.on('fork', (worker) => {
-    console.log(`Worker #${worker.id} is online 👍`);
-  });
+    req.on('response', async  (res) => {
+      const responseBody = await getBody(res, 'answer from worker');
+        const statusCode = res.statusCode;
 
-  cluster.on('listening', (worker, address) => {
-    console.log(`The worker #${worker.id} is now connected to port #${JSON.stringify(address.port)}`);
-    // Worker is waiting for Primary message
-    // worker.on('message', (message) => {
-    //   if (message.cmd && message.cmd === 'notifyRequest') {
-    //     numRequests += 1;
-    //     console.log(`Requests received: ${numRequests}`);
-    //   }
-    //   console.log(`message receive in primary: ${message}`)
-    // });
+        sendResponse(response, statusCode || 500, responseBody)
 
-  });
+      request.on('error', (e) => console.error(e));        
+    })
 
-  cluster.on('disconnect', (worker) => {
-    console.log(`The worker #${worker.id} has disconnected 🥲`);
-  });
+    const method = request.method;
+    let bodyS = '';
 
-  cluster.on('exit', (worker) => {
-    console.log(`Worker ${worker.id} is dead 😵`);
-    cluster.fork(); // Create another worker instead of dead one
-  });
-
-} else {
-  server.on('request', requestWorkerHandler);
-
-  const workerId = cluster.worker?.id || 0;
-  server.listen(port + workerId, () => {
-    console.log(`Server running 🚀 at http://localhost:${port + workerId}/`);
-  });
-
-  process.on('message', ({event, request, response}) => {
-    console.log(`worker receive message: ${event}`);
-    // server.emit('request', request, response);
-    // @ts-ignore
-    // process.send('back answer send from worker')
+    if (method === 'POST' || method === 'PUT') {
+      const body = await getBody(request, 'from master');
+      bodyS = JSON.stringify(body)
+    }
+    req.setHeader('Content-Length', bodyS.length)
+      
+    req.end(bodyS, () => console.log('FINISH'));
   })
 
+  cluster.on('listening', (worker) => {
+    worker.on('message', (message) => {
+      if (message.type === 'add') {
+        addUser(message.user, users);
+      } else if (message.type === 'delete') {
+        deleteUser(message.user, users);
+      } else if (message.type === 'update') {
+        updateUser(message.user.id, message.user, users);
+      }
+      workersArr.filter((w) => w.id !== worker.id).forEach((w) => w.send(users));
+    })
+  })
+
+} else {
+  const workerPort = process.env.workerPort;
+  const workerIdentificator = process.env.identificator;
+
+  let bdInstance: IUser[];
+
+  process.on('message', (message) => {
+    bdInstance = message as IUser[];
+  })
+
+  server.listen(workerPort, () => {
+    console.log(`Worker server #${workerIdentificator} running at http://localhost:${workerPort}`)
+  });
+
+  server.on('request', async (req, res) => {
+    console.log(`worker ${workerIdentificator} on ${workerPort} received the request`)
+    const answer = await serverHandler(req, res, bdInstance);
+
+    if (answer) {
+      process.send && process.send(answer);
+    }
+  });
 }

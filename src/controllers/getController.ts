@@ -1,15 +1,14 @@
 import { ServerResponse, IncomingMessage } from "http";
-import { getUserId, sendResponse, getUserById, isInvalidId, getPathName } from "../utils/helpers";
-import { users } from "../data/users";
-import { Endpoints, IResponse, ResponseMessages, StatusCodes } from "../types";
+import { getUserId, sendResponse, isInvalidId, getPathName } from "../utils/helpers";
+import { Endpoints, IResponse, IUser, ResponseMessages, StatusCodes } from "../types";
+import { getUserById } from "./usersController";
 
-export const processGetMethod = async (request: IncomingMessage, response: ServerResponse) => {
+export const processGetMethod = async (request: IncomingMessage, response: ServerResponse, bd: IUser[]) => {
   const pathName = getPathName(request.url, request.headers.host);
-  console.log('GET', pathName);
 
   if (pathName === Endpoints.USERS) {
     const body: IResponse = {
-      data: users,
+      data: bd,
       error: null,
     }
     sendResponse(response, StatusCodes.OK, body);
@@ -28,13 +27,12 @@ export const processGetMethod = async (request: IncomingMessage, response: Serve
           message: ResponseMessages.INVALID_ID
         }
       }
-      console.log('GET 1')
       sendResponse(response, StatusCodes.BAD_REQUEST, body);
 
       return;
     };
 
-    const user = getUserById(userId);
+    const user = getUserById(userId, bd);
 
     if (user) {
       const body: IResponse = {

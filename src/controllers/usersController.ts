@@ -1,4 +1,3 @@
-import { users } from "../data/users";
 import { IUser, IUserFromRequest } from "../types";
 import { v4 as uuidv4 } from "uuid";
 
@@ -10,13 +9,19 @@ export const createUser = (body: IUserFromRequest) => {
     hobbies: body.hobbies
   };
 
-  users.push(newUser);
-
   return newUser;
 };
 
-export const updateUser = (id: string, body: IUserFromRequest) => {
-  const userForUpdate = users.find((user) => user.id === id) as IUser;
+export const addUser = (user: IUser, bd: IUser[]) => {
+  bd.push(user);
+};
+
+export const getUserById = (id: string, bd: IUser[]) => {
+  return bd.find((user: IUser) => user.id === id);
+};
+
+export const updateUser = (id: string, body: IUserFromRequest | IUser, bd: IUser[]) => {
+  const userForUpdate = bd.find((user) => user.id === id) as IUser;
   userForUpdate.username = body.username;
   userForUpdate.age = body.age;
   userForUpdate.hobbies = body.hobbies;
@@ -24,7 +29,7 @@ export const updateUser = (id: string, body: IUserFromRequest) => {
   return userForUpdate;
 };
 
-export const deleteUser = (id: string) => {
-  const userForDeleteIndex = users.findIndex((user) => user.id === id);
-  users.splice(userForDeleteIndex, 1);
+export const deleteUser = (id: string, bd: IUser[]) => {
+  const userForDeleteIndex = bd.findIndex((user) => user.id === id);
+  bd.splice(userForDeleteIndex, 1);
 };

@@ -1,9 +1,9 @@
 import { ServerResponse, IncomingMessage } from "http";
-import { getPathName, getUserById, getUserId, isInvalidId, sendResponse } from "../utils/helpers";
-import { Endpoints, IResponse, ResponseMessages, StatusCodes } from "../types";
-import { deleteUser } from "./usersController";
+import { getPathName, getUserId, isInvalidId, sendResponse } from "../utils/helpers";
+import { Endpoints, IResponse, IUser, ResponseMessages, StatusCodes } from "../types";
+import { deleteUser, getUserById } from "./usersController";
 
-export const processDeleteMethod = async (request: IncomingMessage, response: ServerResponse) => {
+export const processDeleteMethod = async (request: IncomingMessage, response: ServerResponse, bd: IUser[]) => {
   const pathName = getPathName(request.url, request.headers.host);
   
   if (pathName.startsWith(Endpoints.CERTAIN_USER)) {
@@ -17,21 +17,24 @@ export const processDeleteMethod = async (request: IncomingMessage, response: Se
           message: ResponseMessages.INVALID_ID
         }
       }
-      console.log('DELETE 1')
       sendResponse(response, StatusCodes.BAD_REQUEST, bodyS);
 
       return;
     };
 
-    const user = getUserById(userId);
+    const user = getUserById(userId, bd);
 
     if (user) {
-      deleteUser(userId);
+      deleteUser(userId, bd);
       const bodyS: IResponse = {
         data: null,
         error: null
       }
-      sendResponse(response, StatusCodes.NO_CONTENT, bodyS);
+      sendResponse(response, StatusCodes.NO_CONTENT);
+      return {
+        type: 'delete',
+        user: user
+      }
 
     } else {
       const bodyS: IResponse = {
@@ -41,7 +44,7 @@ export const processDeleteMethod = async (request: IncomingMessage, response: Se
           message: ResponseMessages.NOT_FOUND
         }
       }
-      sendResponse(response, StatusCodes.NOT_FOUND,bodyS);
+      sendResponse(response, StatusCodes.NOT_FOUND, bodyS);
     };
 
     return;
