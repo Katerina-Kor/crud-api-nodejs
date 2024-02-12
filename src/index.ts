@@ -1,8 +1,7 @@
 import http from 'http';
 import { serverHandler } from './controllers/serverHandler';
 
-const multi: boolean = true;
-const PORT = process.env.PORT || '4000';
+const PORT = process.env.PORT || '5000';
 
 export const server = http.createServer();
 

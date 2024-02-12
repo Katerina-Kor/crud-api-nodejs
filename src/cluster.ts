@@ -3,7 +3,7 @@ import cluster, { Worker } from 'cluster';
 import { serverHandler } from './controllers/serverHandler';
 import { hostname, availableParallelism } from 'os';
 import { getBody, sendResponse } from './utils/helpers';
-import { IUser } from './types/index';
+import { IUser, ResponseMessages, StatusCodes } from './types/index';
 import { users } from './data/users';
 import { addUser, deleteUser, updateUser } from './controllers/usersController';
 
@@ -11,13 +11,14 @@ const PORT = process.env.PORT || '4000';
 
 const server = http.createServer();
 
-let number: number = 0;
+let currentNumber: number = 0;
 const ports: number[] = [];
+const numberOfWorkers = availableParallelism() - 1;
 
 const workersArr: Worker[] = [];
 
 if (cluster.isPrimary) {
-  for (let i = 1; i < availableParallelism(); i++) {
+  for (let i = 1; i <= numberOfWorkers; i++) {
     const workerPort = Number(PORT) + i;
     const worker = cluster.fork({
       workerPort: workerPort,
@@ -33,7 +34,7 @@ if (cluster.isPrimary) {
   });
 
   server.on('request', async (request, response) => {
-    const port = ports[number];
+    const port = ports[currentNumber];
     const options = {
       hostname: hostname(),
       port,
@@ -41,7 +42,7 @@ if (cluster.isPrimary) {
       method: request.method,
       headers: request.headers,
     };
-    number = number === 3 ? 0 : number + 1;
+    currentNumber = currentNumber === numberOfWorkers - 1 ? 0 : currentNumber + 1;
 
     const req = http.request(options);
 
@@ -49,9 +50,19 @@ if (cluster.isPrimary) {
       const responseBody = await getBody(res, 'answer from worker');
         const statusCode = res.statusCode;
 
-        sendResponse(response, statusCode || 500, responseBody)
+        sendResponse(response, statusCode || StatusCodes.INTERNAL_SERVER_ERROR, responseBody);
 
-      request.on('error', (e) => console.error(e));        
+      request.on('error', (e) => {
+        const body = {
+          data: null,
+          error: {
+            code: 500,
+            message: ResponseMessages.SERVER_ERROR
+          }
+        }
+        sendResponse(response, StatusCodes.INTERNAL_SERVER_ERROR, body);
+        console.error(e);
+      });        
     })
 
     const method = request.method;
@@ -63,7 +74,7 @@ if (cluster.isPrimary) {
     }
     req.setHeader('Content-Length', bodyS.length)
       
-    req.end(bodyS, () => console.log('FINISH'));
+    req.end(bodyS);
   })
 
   cluster.on('listening', (worker) => {
