@@ -6,7 +6,7 @@
   "scripts": {
     "start:dev": "ts-node-dev --respawn -r dotenv/config src/index.ts",
     "start:multi": "ts-node-dev --respawn -r dotenv/config src/cluster.ts",
-    "start:prod": "tsc && node dist/index.js",
+    "start:prod": "tsc && node -r dotenv/config dist/index.js",
     "test": "jest"
   },
   "author": "Katerina-Kor",
